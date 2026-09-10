@@ -45,6 +45,7 @@
   --wrap: 1280px;
   --gut:  clamp(1.15rem, 4vw, 3rem);
   --bar-h: 62px;
+  --sl-h:  64px;
 
   --font-display: "Bricolage Grotesque", "Archivo Black", "Helvetica Neue", Arial, sans-serif;
   --font-body:    "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -606,6 +607,44 @@ h3         { font-size: clamp(1.05rem, .98rem + .35vw, 1.25rem); }
 .plate:hover .plate-cta, .plate-cta:focus-visible { opacity: 1; transform: none; }
 @media (hover: none) { .plate-cta { opacity: 1; transform: none; } }
 
+/* Enquiry shortlist: injected by main.js, so these rules match nothing when
+   scripts are unavailable. z-index clears .plate-title a::after, the overlay
+   link that covers the whole plate. */
+.plate-add {
+  margin-top: .7rem; margin-left: 1rem; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--font-mono); font-size: .68rem; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: .4rem;
+  position: relative; z-index: 2;
+  transition: color .25s var(--ease);
+}
+.plate-add-mark {
+  width: 13px; height: 13px; position: relative;
+  border: 1px solid currentColor; border-radius: 50%;
+}
+.plate-add-mark::before, .plate-add-mark::after {
+  content: ""; position: absolute; background: currentColor;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+}
+.plate-add-mark::before { width: 7px; height: 1px; }
+.plate-add-mark::after  { width: 1px; height: 7px; transition: transform .2s var(--ease); }
+.plate-add:hover, .plate-add:focus-visible { color: var(--ink); }
+.plate-add[aria-pressed="true"] { color: var(--whatsapp-dark); }
+.plate-add[aria-pressed="true"] .plate-add-mark {
+  background: var(--whatsapp-dark); border-color: var(--whatsapp-dark);
+}
+.plate-add[aria-pressed="true"] .plate-add-mark::before,
+.plate-add[aria-pressed="true"] .plate-add-mark::after { background: var(--ground); }
+/* + rotates into x, signalling that a second press removes it */
+.plate-add[aria-pressed="true"] .plate-add-mark::after { transform: translate(-50%, -50%) rotate(90deg); }
+.panel .plate-add { color: var(--on-dark-3); }
+.panel .plate-add:hover, .panel .plate-add:focus-visible { color: var(--on-dark); }
+.panel .plate-add[aria-pressed="true"] { color: var(--whatsapp); }
+.panel .plate-add[aria-pressed="true"] .plate-add-mark { background: var(--whatsapp); border-color: var(--whatsapp); }
+/* The product page puts it in the existing button row, where it needs height */
+.btn-row .plate-add { margin: 0; min-height: 44px; }
+
 /* Plates on dark panels */
 .panel .plate-num { background: var(--ink); color: var(--ground); }
 .panel .plate-body::before { background: var(--line-dark); }
@@ -1019,9 +1058,43 @@ address.footer-address {
 .action-bar .is-whatsapp { color: var(--whatsapp-dark); }
 .action-bar .is-quote { color: var(--rust-text); }
 
+/* --- Enquiry shortlist bar ----------------------------------------------
+   Sits above .action-bar rather than replacing it, and grows the body padding
+   only while it is on screen, so it can never cover the last row of products. */
+.shortlist-bar {
+  position: fixed; inset: auto 0 0 0; z-index: 95;
+  background: var(--ink); color: var(--on-dark);
+  border-top: 1px solid var(--line-dark);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.shortlist-inner {
+  min-height: var(--sl-h);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .6rem 1rem; padding-top: .6rem; padding-bottom: .6rem;
+}
+.shortlist-count {
+  font-family: var(--font-mono); font-size: .72rem; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--on-dark);
+}
+.shortlist-actions { display: flex; align-items: center; gap: 1rem; }
+.shortlist-clear {
+  background: none; border: 0; padding: .3rem 0; cursor: pointer;
+  font-family: var(--font-mono); font-size: .68rem; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--on-dark-2);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.shortlist-clear:hover, .shortlist-clear:focus-visible { color: var(--on-dark); }
+body.has-shortlist { padding-bottom: var(--sl-h); }
+
+@media (max-width: 520px) {
+  .shortlist-inner { justify-content: center; }
+}
+
 @media (max-width: 960px) {
   .action-bar { display: grid; }
   body { padding-bottom: var(--bar-h); }
+  .shortlist-bar { bottom: calc(var(--bar-h) + env(safe-area-inset-bottom)); }
+  body.has-shortlist { padding-bottom: calc(var(--bar-h) + var(--sl-h)); }
 }
 
 /* --- Animation staging --------------------------------------------------

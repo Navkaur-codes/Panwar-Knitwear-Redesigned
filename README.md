@@ -94,11 +94,6 @@ and asymmetric on the homepage brand band via `.plates--editorial`.
 compresses them into `img/`. Drop new full-size photos into `img/orig/` and run
 it. Current set: 6.8 MB → 3.1 MB.
 
-`data/ogimage.py` builds the default social share card, `img/og-cover.jpg`, by
-cropping the homepage hero original to 1200×630 — the size WhatsApp, Facebook
-and LinkedIn crop link previews to. Run it only if the hero photo changes;
-`build.py` does not. Product pages share their own garment photo instead.
-
 ## How the data was produced
 
 `data/products.txt` and `data/raw/` are the scraped originals from the previous

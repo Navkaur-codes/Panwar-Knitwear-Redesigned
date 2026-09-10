@@ -86,43 +86,26 @@ ICON = {
  'arrow': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
 }
 
-SITE = 'https://panwarknitwear.com'
-
-# Default Open Graph card: the homepage hero flat-lay, cropped to 1200x630
-# by data/ogimage.py. Product pages override it with their own garment.
-OG_ALT = ('Zonixa heavy 320 GSM round neck hoodies manufactured by '
-          'Panwar Knitwear, Ludhiana')
-
 FONTS = ('https://fonts.googleapis.com/css2?'
          'family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800'
          '&family=DM+Mono:wght@400;500'
          '&family=Inter+Tight:wght@400;500;600&display=swap')
 
 # --- Shared chrome ----------------------------------------------------------
-def head(title, desc, rel='', canonical='', extra='', intro=False,
-         og_image='og-cover.jpg', og_dims=(1200, 630), og_alt=OG_ALT):
+def head(title, desc, rel='', canonical='', extra='', intro=False):
     intro_attr = ' data-intro="on"' if intro else ''
-    url = f'{SITE}/{canonical}'
-    og_w, og_h = og_dims
     return f"""<!DOCTYPE html>
-<html lang="en"{intro_attr}>
+<html lang="en" data-wa="{BIZ['wa']}"{intro_attr}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{E(title)}</title>
 <meta name="description" content="{E(desc)}">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="{url}">
+<link rel="canonical" href="https://panwarknitwear.com/{canonical}">
 <meta property="og:title" content="{E(title)}">
 <meta property="og:description" content="{E(desc)}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{url}">
-<meta property="og:site_name" content="{E(BIZ['name'])}">
-<meta property="og:image" content="{SITE}/img/{og_image}">
-<meta property="og:image:width" content="{og_w}">
-<meta property="og:image:height" content="{og_h}">
-<meta property="og:image:alt" content="{E(og_alt)}">
-<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="{rel}img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -231,12 +214,26 @@ def action_bar(rel=''):
 </nav>
 """
 
+# Shipped hidden and shown by main.js only once something is selected, so a
+# visitor without JS never sees a bar that cannot do anything.
+def shortlist_bar():
+    return f"""<div class="shortlist-bar" id="shortlist" hidden>
+<div class="wrap shortlist-inner">
+<p class="shortlist-count" id="shortlist-count" aria-live="polite"></p>
+<div class="shortlist-actions">
+<button type="button" class="shortlist-clear" id="shortlist-clear">Clear</button>
+<a class="btn btn--wa btn--sm" id="shortlist-send" href="#" target="_blank" rel="noopener">{ICON['whatsapp']} Enquire on WhatsApp</a>
+</div>
+</div>
+</div>
+"""
+
 def footer(rel=''):
     phones = '\n'.join(
         f'<li><a href="tel:+91{p[3][2:]}">{E(p[2])}</a></li>' for p in PHONES)
     cats = '\n'.join(f'<li><a href="{rel}products.html#{k}">{E(l)}</a></li>' for k, l, _ in CATEGORIES)
     profs = '\n'.join(f'<li><a href="{E(u)}" target="_blank" rel="noopener">{E(n)}</a></li>' for n, u in PROFILES)
-    return f"""{action_bar(rel)}
+    return f"""{shortlist_bar()}{action_bar(rel)}
 <footer class="site-footer">
 <div class="wrap">
 <div class="footer-grid">
@@ -285,7 +282,7 @@ LOCALBUSINESS_LD = json.dumps({
     "description": "Knitwear manufacturer and wholesale supplier in Ludhiana, Punjab. "
                    "T-shirts, polos, hoodies, sweatshirts and jackets under the ZONIXA brand, "
                    "and bottomwear under MSP Sports.",
-    "url": f"{SITE}/",
+    "url": "https://panwarknitwear.com/",
     "email": BIZ['email'],
     "telephone": ["+91" + p[3][2:] for p in PHONES],
     "address": {"@type": "PostalAddress", "addressLocality": BIZ['city'],
@@ -304,7 +301,7 @@ def ld(obj):
 def plate(p, rel=''):
     msg = 'Hello Panwar Knitwear, I am interested in "%s". Please share wholesale details.' % p['name']
     spec = E(p['cardspec']) if p['cardspec'] else 'Details on enquiry'
-    return f"""<li class="plate" data-anim="plate" data-categories="{E(' '.join(p['categories']))}">
+    return f"""<li class="plate" data-anim="plate" data-categories="{E(' '.join(p['categories']))}" data-slug="{E(p['slug'])}" data-name="{E(p['name'])}">
 <span class="plate-media">
 <span class="plate-num">{p['plate']}</span>
 <img src="{rel}img/{p['image']}" alt="{E(p['name'])}" width="700" height="818" loading="lazy" decoding="async">
@@ -643,7 +640,7 @@ def build_product(p):
         "@context": "https://schema.org",
         "@type": "Product",
         "name": p['name'],
-        "image": f"{SITE}/img/{p['image']}",
+        "image": f"https://panwarknitwear.com/img/{p['image']}",
         "description": p['description'].split('\n')[0][:300],
         "brand": {"@type": "Brand", "name": "ZONIXA"},
         "manufacturer": {"@type": "Organization", "name": BIZ['name'],
@@ -657,10 +654,7 @@ def build_product(p):
         f"{p['name']} | Wholesale from Panwar Knitwear, Ludhiana",
         f"{meta}… Available for bulk wholesale from Panwar Knitwear, Ludhiana. "
         f"Minimum order {BIZ['moq']}. Enquire on WhatsApp.",
-        rel='../', canonical=f'product/{p["slug"]}.html', extra=ld(product_ld),
-        og_image=p['image'], og_dims=(700, 818),
-        og_alt=f'{p["name"]} — wholesale knitwear manufactured by '
-               f'Panwar Knitwear, Ludhiana')
+        rel='../', canonical=f'product/{p["slug"]}.html', extra=ld(product_ld))
     + header(rel='../', current='products')
     + f"""<main>
 <div class="wrap"><p class="breadcrumb"><a href="../index.html">Index</a> / <a href="../products.html">Products</a> / {E(p['name'])}</p></div>
@@ -678,7 +672,7 @@ def build_product(p):
 {chr(10).join(rows)}
 </dl>
 
-<div class="enquiry-box">
+<div class="enquiry-box" data-slug="{E(p['slug'])}" data-name="{E(p['name'])}">
 <span class="mono">Price on enquiry</span>
 <p>Send us the article and quantity — we reply with wholesale rates.</p>
 <div class="btn-row">

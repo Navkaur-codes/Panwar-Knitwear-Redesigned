@@ -107,6 +107,98 @@
     }
   }
 
+  /* --- Enquiry shortlist -------------------------------------------------
+     Wholesale buyers rarely want one article. This collects several and hands
+     WhatsApp a single message listing all of them. Entirely additive: the
+     per-product "Enquire" links are untouched, and the Add controls are
+     injected here, so without JS none of it appears. */
+  var SL_KEY = 'pk-shortlist';
+  var SL_MAX = 10;               // keeps the wa.me ?text= URL a sane length
+  var slBar = document.getElementById('shortlist');
+  var slItems = document.querySelectorAll('[data-slug][data-name]');
+
+  function slRead() {
+    try {
+      var raw = JSON.parse(sessionStorage.getItem(SL_KEY));
+      return Array.isArray(raw) ? raw.slice(0, SL_MAX) : [];
+    } catch (e) { return []; }
+  }
+
+  function slWrite(list) {
+    try { sessionStorage.setItem(SL_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  if (slBar && slItems.length) {
+    var slList = slRead();
+    var slCount = document.getElementById('shortlist-count');
+    var slSend = document.getElementById('shortlist-send');
+    var slClear = document.getElementById('shortlist-clear');
+    var slNumber = root.dataset.wa;
+
+    var slHas = function (slug) {
+      return slList.some(function (it) { return it.slug === slug; });
+    };
+
+    function slMessage() {
+      var lines = slList.map(function (it, i) { return (i + 1) + '. ' + it.name; });
+      return 'Hello Panwar Knitwear, I would like wholesale details for:\n' +
+             lines.join('\n') + '\nPlease share rates and MOQ.';
+    }
+
+    function slRender() {
+      var n = slList.length;
+      slBar.hidden = n === 0;
+      document.body.classList.toggle('has-shortlist', n > 0);
+      if (n) {
+        slCount.textContent = n + (n === 1 ? ' article selected' : ' articles selected') +
+                              (n >= SL_MAX ? ' \u00b7 max' : '');
+        slSend.href = 'https://wa.me/' + slNumber + '?text=' + encodeURIComponent(slMessage());
+      }
+      // Buttons for the same product exist on more than one page state, so
+      // sync every control rather than just the one that was clicked.
+      slItems.forEach(function (el) {
+        var btn = el.querySelector('.plate-add');
+        if (!btn) return;
+        var on = slHas(el.dataset.slug);
+        btn.setAttribute('aria-pressed', String(on));
+        btn.querySelector('.plate-add-label').textContent = on ? 'Added' : 'Add to enquiry';
+      });
+      if (window.ScrollTrigger) ScrollTrigger.refresh();
+    }
+
+    function slToggle(el) {
+      var slug = el.dataset.slug;
+      if (slHas(slug)) {
+        slList = slList.filter(function (it) { return it.slug !== slug; });
+      } else {
+        if (slList.length >= SL_MAX) { slRender(); return; }
+        slList.push({ slug: slug, name: el.dataset.name });
+      }
+      slWrite(slList);
+      slRender();
+    }
+
+    slItems.forEach(function (el) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plate-add';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.innerHTML = '<span class="plate-add-mark" aria-hidden="true"></span>' +
+                      '<span class="plate-add-label"></span>';
+      btn.addEventListener('click', function () { slToggle(el); });
+      // On a product page the natural home is the existing button row.
+      (el.querySelector('.btn-row') || el.querySelector('.plate-body') || el).appendChild(btn);
+    });
+
+    slClear.addEventListener('click', function () {
+      slList = [];
+      slWrite(slList);
+      slRender();
+    });
+
+    slRender();
+  }
+
   /* --- Motion layer ------------------------------------------------------ */
   function initMotion() {
     if (!motionOK || !window.gsap || !window.ScrollTrigger) { release(); dismissIntro(); return; }
