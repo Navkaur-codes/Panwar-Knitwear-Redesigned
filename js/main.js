@@ -53,6 +53,19 @@
     onScroll();
   }
 
+  /* Re-measuring every trigger reverts and re-applies the pinned manufacturing
+     sequence, so a refresh in the middle of a scroll visibly relocates it and
+     drops its 01-04 stage state. Only call this when element geometry above
+     the fold of a trigger has actually changed, and never while a pin is
+     engaged — the next real refresh (resize, load) picks up the rest. */
+  function safeRefresh() {
+    if (!window.ScrollTrigger) return;
+    var pinned = ScrollTrigger.getAll().some(function (t) {
+      return t.pin && t.isActive;
+    });
+    if (!pinned) ScrollTrigger.refresh();
+  }
+
   /* --- Product category filter ------------------------------------------ */
   var chips = document.querySelectorAll('.chip[data-filter]');
   var plates = document.querySelectorAll('.plates [data-categories]');
@@ -79,7 +92,8 @@
           onComplete: function () { gsap.set(shown, { clearProps: 'opacity,transform' }); }
         });
     }
-    if (window.ScrollTrigger) ScrollTrigger.refresh();
+    // Hiding plates changes the height of everything below them.
+    safeRefresh();
   }
 
   if (chips.length && plates.length) {
@@ -162,8 +176,17 @@
         var on = slHas(el.dataset.slug);
         btn.setAttribute('aria-pressed', String(on));
         btn.querySelector('.plate-add-label').textContent = on ? 'Added' : 'Add to enquiry';
+        // At the cap an unselected button would swallow the press silently.
+        var full = !on && slList.length >= SL_MAX;
+        btn.disabled = full;
+        btn.title = full
+          ? 'The enquiry list holds ' + SL_MAX + ' articles. Send it, or remove one first.'
+          : '';
       });
-      if (window.ScrollTrigger) ScrollTrigger.refresh();
+      /* Deliberately no ScrollTrigger.refresh() here. The bar is fixed and the
+         only layout it costs is padding on the bottom of <body>, below every
+         trigger — so nothing needs re-measuring, and refreshing mid-scroll
+         would disturb the pinned manufacturing sequence. */
     }
 
     function slToggle(el) {

@@ -62,7 +62,10 @@
    `auto`, turning body into a nested scroller and breaking sticky + anchors. */
 html {
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
+  /* No `scroll-behavior: smooth`: it animates every programmatic scroll, which
+     fights ScrollTrigger's pinned manufacturing sequence (and the intro's
+     scrollTo(0,0)). Nothing here navigates by in-page anchor, so it bought
+     nothing. */
   overflow-x: hidden;
   background: var(--ground);
 }
@@ -82,7 +85,6 @@ a { color: inherit; }
 ul, ol { list-style: none; padding: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
@@ -630,6 +632,8 @@ h3         { font-size: clamp(1.05rem, .98rem + .35vw, 1.25rem); }
 .plate-add-mark::before { width: 7px; height: 1px; }
 .plate-add-mark::after  { width: 1px; height: 7px; transition: transform .2s var(--ease); }
 .plate-add:hover, .plate-add:focus-visible { color: var(--ink); }
+.plate-add:disabled { cursor: not-allowed; opacity: .45; }
+.plate-add:disabled:hover { color: var(--ink-3); }
 .plate-add[aria-pressed="true"] { color: var(--whatsapp-dark); }
 .plate-add[aria-pressed="true"] .plate-add-mark {
   background: var(--whatsapp-dark); border-color: var(--whatsapp-dark);
